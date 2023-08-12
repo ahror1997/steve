@@ -19,22 +19,28 @@
 package de.rwth.idsg.steve.web.api;
 
 import de.rwth.idsg.steve.repository.TransactionRepository;
+import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
+import de.rwth.idsg.steve.repository.dto.RemoteStartTXReq;
+import de.rwth.idsg.steve.repository.dto.RemoteStopTXReq;
 import de.rwth.idsg.steve.repository.dto.Transaction;
+import de.rwth.idsg.steve.service.ChargePointService16_Client;
 import de.rwth.idsg.steve.web.api.ApiControllerAdvice.ApiErrorResponse;
 import de.rwth.idsg.steve.web.api.exception.BadRequestException;
+import de.rwth.idsg.steve.web.dto.TaskIDResp;
 import de.rwth.idsg.steve.web.dto.TransactionQueryForm;
+import de.rwth.idsg.steve.web.dto.ocpp.RemoteStartTransactionParams;
+import de.rwth.idsg.steve.web.dto.ocpp.RemoteStopTransactionParams;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author Sevket Goekay <sevketgokay@gmail.com>
@@ -48,11 +54,77 @@ public class TransactionsRestController {
 
     private final TransactionRepository transactionRepository;
 
+    @Autowired
+    private ChargePointService16_Client chargePointService16_Client;
+
     @ApiResponses(value = {
-        @ApiResponse(code = 200, message = "OK"),
-        @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
-        @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
-        @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+    )
+    @PostMapping(value = "/start-tx")
+    @ResponseBody
+    public TaskIDResp startTX(@RequestBody RemoteStartTXReq req) {
+        log.debug("Read request for query: {}", req);
+
+        RemoteStartTransactionParams params = new RemoteStartTransactionParams();
+
+        params.setConnectorId(req.getConnectorId());
+        params.setIdTag(req.getIdTag());
+        params.setChargePointSelectList(
+                req.getChargePointSelectList().stream().map(cp ->
+                        new ChargePointSelect(
+                                cp.getOcppTransport(), cp.getChargeBoxId(), cp.getEndpointAddress()
+                        )
+                ).collect(Collectors.toList())
+        );
+
+        Integer taskID =
+                chargePointService16_Client.remoteStartTransaction(
+                        params
+                );
+
+        log.debug("Read response for query: {}", taskID);
+        return new TaskIDResp(taskID);
+    }
+
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+    )
+    @PostMapping(value = "/stop-tx")
+    @ResponseBody
+    public TaskIDResp stopTX(@RequestBody RemoteStopTXReq req) {
+        log.debug("Read request for query: {}", req);
+
+        RemoteStopTransactionParams params = new RemoteStopTransactionParams();
+        params.setTransactionId(req.getTransactionId());
+        params.setChargePointSelectList(
+                req.getChargePointSelectList().stream().map(cp ->
+                        new ChargePointSelect(
+                                cp.getOcppTransport(), cp.getChargeBoxId(), cp.getEndpointAddress()
+                        )
+                ).collect(Collectors.toList())
+        );
+
+        Integer taskID =
+                chargePointService16_Client.remoteStopTransaction(
+                        params
+                );
+
+        log.debug("Read response for query: {}", taskID);
+        return new TaskIDResp(taskID);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
     )
     @GetMapping(value = "")
     @ResponseBody
