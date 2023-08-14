@@ -1,4 +1,4 @@
-package de.rwth.idsg.steve.web.dto;
+package de.rwth.idsg.steve.web.api.dto;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

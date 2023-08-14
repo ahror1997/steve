@@ -20,16 +20,13 @@ package de.rwth.idsg.steve.web.api;
 
 import de.rwth.idsg.steve.repository.TransactionRepository;
 import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
-import de.rwth.idsg.steve.repository.dto.RemoteStartTXReq;
-import de.rwth.idsg.steve.repository.dto.RemoteStopTXReq;
 import de.rwth.idsg.steve.repository.dto.Transaction;
 import de.rwth.idsg.steve.service.ChargePointService16_Client;
 import de.rwth.idsg.steve.web.api.ApiControllerAdvice.ApiErrorResponse;
+import de.rwth.idsg.steve.web.api.dto.*;
 import de.rwth.idsg.steve.web.api.exception.BadRequestException;
-import de.rwth.idsg.steve.web.dto.TaskIDResp;
 import de.rwth.idsg.steve.web.dto.TransactionQueryForm;
-import de.rwth.idsg.steve.web.dto.ocpp.RemoteStartTransactionParams;
-import de.rwth.idsg.steve.web.dto.ocpp.RemoteStopTransactionParams;
+import de.rwth.idsg.steve.web.dto.ocpp.*;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.RequiredArgsConstructor;
@@ -63,6 +60,101 @@ public class TransactionsRestController {
             @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
             @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
     )
+    @PostMapping(value = "/cancel-reserve")
+    @ResponseBody
+    public TaskIDResp cancelReserve(@RequestBody CancelReservationReq req) {
+        log.debug("Read request for query: {}", req);
+
+        CancelReservationParams params = new CancelReservationParams();
+
+        params.setReservationId(req.getReservationId());
+        params.setChargePointSelectList(
+                req.getChargePointSelectList().stream().map(cp ->
+                        new ChargePointSelect(
+                                cp.getOcppTransport(), cp.getChargeBoxId(), cp.getEndpointAddress()
+                        )
+                ).collect(Collectors.toList())
+        );
+
+        Integer taskID =
+                chargePointService16_Client.cancelReservation(
+                        params
+                );
+
+        log.debug("Read response for query: {}", taskID);
+        return new TaskIDResp(taskID);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+    )
+    @PostMapping(value = "/reserve-now")
+    @ResponseBody
+    public TaskIDResp reserveNow(@RequestBody ReserveNowReq req) {
+        log.debug("Read request for query: {}", req);
+
+        ReserveNowParams params = new ReserveNowParams();
+
+        params.setConnectorId(req.getConnectorId());
+        params.setIdTag(req.getIdTag());
+        params.setExpiry(req.getExpiry());
+        params.setChargePointSelectList(
+                req.getChargePointSelectList().stream().map(cp ->
+                        new ChargePointSelect(
+                                cp.getOcppTransport(), cp.getChargeBoxId(), cp.getEndpointAddress()
+                        )
+                ).collect(Collectors.toList())
+        );
+
+        Integer taskID =
+                chargePointService16_Client.reserveNow(
+                        params
+                );
+
+        log.debug("Read response for query: {}", taskID);
+        return new TaskIDResp(taskID);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+    )
+    @PostMapping(value = "/unlock-connector")
+    @ResponseBody
+    public TaskIDResp unlockConnector(@RequestBody UnlockConnectorReq req) {
+        log.debug("Read request for query: {}", req);
+
+        UnlockConnectorParams params = new UnlockConnectorParams();
+
+        params.setConnectorId(req.getConnectorId());
+        params.setChargePointSelectList(
+                req.getChargePointSelectList().stream().map(cp ->
+                        new ChargePointSelect(
+                                cp.getOcppTransport(), cp.getChargeBoxId(), cp.getEndpointAddress()
+                        )
+                ).collect(Collectors.toList())
+        );
+
+        Integer taskID =
+                chargePointService16_Client.unlockConnector(
+                        params
+                );
+
+        log.debug("Read response for query: {}", taskID);
+        return new TaskIDResp(taskID);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+    )
     @PostMapping(value = "/start-tx")
     @ResponseBody
     public TaskIDResp startTX(@RequestBody RemoteStartTXReq req) {
@@ -88,7 +180,6 @@ public class TransactionsRestController {
         log.debug("Read response for query: {}", taskID);
         return new TaskIDResp(taskID);
     }
-
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "OK"),

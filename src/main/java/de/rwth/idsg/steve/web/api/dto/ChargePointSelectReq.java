@@ -1,4 +1,4 @@
-package de.rwth.idsg.steve.repository.dto;
+package de.rwth.idsg.steve.web.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import de.rwth.idsg.steve.ocpp.OcppTransport;

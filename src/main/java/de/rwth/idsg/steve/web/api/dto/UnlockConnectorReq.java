@@ -1,6 +1,5 @@
-package de.rwth.idsg.steve.repository.dto;
+package de.rwth.idsg.steve.web.api.dto;
 
-import de.rwth.idsg.steve.ocpp.OcppTransport;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,9 +11,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RemoteStartTXReq {
+public class UnlockConnectorReq {
     private Integer connectorId;
-    private String idTag;
     private List<ChargePointSelectReq> chargePointSelectList;
 }
-
