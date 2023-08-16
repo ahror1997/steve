@@ -22,6 +22,7 @@ import de.rwth.idsg.steve.repository.TransactionRepository;
 import de.rwth.idsg.steve.repository.dto.ChargePointSelect;
 import de.rwth.idsg.steve.repository.dto.Transaction;
 import de.rwth.idsg.steve.service.ChargePointService16_Client;
+import de.rwth.idsg.steve.service.TransactionStopService;
 import de.rwth.idsg.steve.web.api.ApiControllerAdvice.ApiErrorResponse;
 import de.rwth.idsg.steve.web.api.dto.*;
 import de.rwth.idsg.steve.web.api.exception.BadRequestException;
@@ -53,6 +54,27 @@ public class TransactionsRestController {
 
     @Autowired
     private ChargePointService16_Client chargePointService16_Client;
+
+    @Autowired
+    private TransactionStopService transactionStopService;
+
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "OK"),
+            @ApiResponse(code = 400, message = "Bad Request", response = ApiErrorResponse.class),
+            @ApiResponse(code = 401, message = "Unauthorized", response = ApiErrorResponse.class),
+            @ApiResponse(code = 500, message = "Internal Server Error", response = ApiErrorResponse.class)}
+    )
+    @PostMapping(value = "/force-stop-tx")
+    @ResponseBody
+    public String stopTxForce(@RequestParam Integer transactionPk) {
+        log.debug("Read request for query: {}", transactionPk);
+
+        transactionStopService.stop(transactionPk);
+
+        log.debug("Read response for query: OK");
+        return "OK";
+    }
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "OK"),
