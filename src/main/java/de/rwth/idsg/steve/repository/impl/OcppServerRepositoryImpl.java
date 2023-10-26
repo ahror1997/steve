@@ -20,15 +20,12 @@ package de.rwth.idsg.steve.repository.impl;
 
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Striped;
+import com.google.gson.Gson;
 import de.rwth.idsg.steve.SteveException;
 import de.rwth.idsg.steve.ocpp.OcppProtocol;
 import de.rwth.idsg.steve.repository.OcppServerRepository;
 import de.rwth.idsg.steve.repository.ReservationRepository;
-import de.rwth.idsg.steve.repository.dto.InsertConnectorStatusParams;
-import de.rwth.idsg.steve.repository.dto.InsertTransactionParams;
-import de.rwth.idsg.steve.repository.dto.TransactionStatusUpdate;
-import de.rwth.idsg.steve.repository.dto.UpdateChargeboxParams;
-import de.rwth.idsg.steve.repository.dto.UpdateTransactionParams;
+import de.rwth.idsg.steve.repository.dto.*;
 import jooq.steve.db.enums.TransactionStopEventActor;
 import jooq.steve.db.enums.TransactionStopFailedEventActor;
 import jooq.steve.db.tables.records.ConnectorMeterValueRecord;
@@ -36,6 +33,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import ocpp.cs._2015._10.MeterValue;
+import okhttp3.*;
 import org.joda.time.DateTime;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
@@ -45,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.stream.Collectors;
@@ -449,6 +448,26 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
                     .collect(Collectors.toList());
 
         ctx.batchInsert(batch).execute();
+
+        //informing other service about update
+        String informURL = System.getenv("CONNECTOR_METER_VALUE_INFORM_URL");
+        OkHttpClient client = new OkHttpClient().newBuilder()
+                .build();
+        MediaType mediaType = MediaType.parse("application/json");
+        RequestBody body = RequestBody.create(
+                new Gson().toJson(batch),
+                mediaType
+        );
+        Request request = new Request.Builder()
+                .url(informURL)
+                .method("POST", body)
+                .addHeader("Content-Type", "application/json")
+                .build();
+        try {
+            Response response = client.newCall(request).execute();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void tryInsertingFailed(UpdateTransactionParams p, Exception e) {
