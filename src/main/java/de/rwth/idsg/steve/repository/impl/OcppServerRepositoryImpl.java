@@ -450,7 +450,8 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
         ctx.batchInsert(batch).execute();
 
         //informing other service about update
-        String informURL = System.getenv("CONNECTOR_METER_VALUE_INFORM_URL");
+//        String informURL = System.getenv("CONNECTOR_METER_VALUE_INFORM_URL");
+        String informURL = "https://powerbek.uz/api/connector-meter-value-inform";
         OkHttpClient client = new OkHttpClient().newBuilder()
                 .build();
         MediaType mediaType = MediaType.parse("application/json");
