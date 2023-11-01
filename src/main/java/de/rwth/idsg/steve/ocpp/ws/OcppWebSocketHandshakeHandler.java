@@ -84,40 +84,14 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
 
         attributes.put(AbstractWebSocketEndpoint.CHARGEBOX_ID_KEY, chargeBoxId);
 
-        // -------------------------------------------------------------------------
-        // 2. Route according to the selected protocol
-        // -------------------------------------------------------------------------
-
-        List<String> requestedProtocols = new WebSocketHttpHeaders(request.getHeaders()).getSecWebSocketProtocol();
-
-        if (CollectionUtils.isEmpty(requestedProtocols)) {
-            log.error("No protocol (OCPP version) is specified.");
-            response.setStatusCode(HttpStatus.BAD_REQUEST);
-            return false;
-        }
-
-        AbstractWebSocketEndpoint endpoint = selectEndpoint(requestedProtocols);
-
-        if (endpoint == null) {
-            log.error("None of the requested protocols '{}' is supported", requestedProtocols);
-            response.setStatusCode(HttpStatus.NOT_FOUND);
-            return false;
-        }
-
-        log.debug("ChargeBoxId '{}' will be using {}", chargeBoxId, endpoint.getClass().getSimpleName());
-        return delegate.doHandshake(request, response, endpoint, attributes);
+        log.debug("ChargeBoxId '{}'", chargeBoxId);
+        return true;
     }
 
     private AbstractWebSocketEndpoint selectEndpoint(List<String> requestedProtocols ) {
-        log.debug("Requested protocols: {}", requestedProtocols.toString());
-        for (int i = 0; i < requestedProtocols.size(); i++) {
-            String requestedProtocol = requestedProtocols.get(i);
-            String protocol = requestedProtocol.toLowerCase();
+        for (String requestedProcotol : requestedProtocols) {
             for (AbstractWebSocketEndpoint item : endpoints) {
-                String endpointHandlerVersion = item.getVersion().getValue().toLowerCase();
-                //route minor versions to main ones, eg: ocpp1.6j to ocpp1.6
-                if (protocol.startsWith(endpointHandlerVersion)) {
-                    requestedProtocols.set(i, endpointHandlerVersion);
+                if (item.getVersion().getValue().equals(requestedProcotol)) {
                     return item;
                 }
             }
