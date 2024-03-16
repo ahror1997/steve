@@ -110,11 +110,14 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
 
     private AbstractWebSocketEndpoint selectEndpoint(List<String> requestedProtocols ) {
         log.debug("Requested protocols: {}", requestedProtocols.toString());
-        for (String requestedProtocol : requestedProtocols) {
+        for (int i = 0; i < requestedProtocols.size(); i++) {
+            String requestedProtocol = requestedProtocols.get(i);
             String protocol = requestedProtocol.toLowerCase();
             for (AbstractWebSocketEndpoint item : endpoints) {
+                String endpointHandlerVersion = item.getVersion().getValue().toLowerCase();
                 //route minor versions to main ones, eg: ocpp1.6j to ocpp1.6
-                if (protocol.startsWith(item.getVersion().getValue().toLowerCase())) {
+                if (protocol.startsWith(endpointHandlerVersion)) {
+                    requestedProtocols.set(i, endpointHandlerVersion);
                     return item;
                 }
             }
