@@ -1,21 +1,3 @@
-/*
- * SteVe - SteckdosenVerwaltung - https://github.com/steve-community/steve
- * Copyright (C) 2013-2023 SteVe Community Team
- * All Rights Reserved.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
 package de.rwth.idsg.steve.ocpp.ws;
 
 import de.rwth.idsg.steve.config.WebSocketConfiguration;
@@ -40,10 +22,6 @@ import java.util.Optional;
 
 import static de.rwth.idsg.steve.utils.StringUtils.getLastBitFromUrl;
 
-/**
- * @author Sevket Goekay <sevketgokay@gmail.com>
- * @since 05.03.2022
- */
 @Slf4j
 @RequiredArgsConstructor
 public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
@@ -52,11 +30,9 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
     private final List<AbstractWebSocketEndpoint> endpoints;
     private final ChargePointHelperService chargePointHelperService;
 
-    /**
-     * We need some WebSocketHandler just for Spring to register it for the path. We will not use it for the actual
-     * operations. This instance will be passed to doHandshake(..) below. We will find the proper WebSocketEndpoint
-     * based on the selectedProtocol and replace the dummy one with the proper one in the subsequent call chain.
-     */
+    // Default OCPP version to use if none is specified
+    private static final String DEFAULT_OCPP_VERSION = "ocpp1.6";
+
     public WebSocketHandler getDummyWebSocketHandler() {
         return new TextWebSocketHandler();
     }
@@ -65,17 +41,11 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
     public boolean doHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                WebSocketHandler wsHandler, Map<String, Object> attributes) throws HandshakeFailureException {
 
-        // -------------------------------------------------------------------------
-        // 1. Check the chargeBoxId
-        // -------------------------------------------------------------------------
-
         String chargeBoxId = getLastBitFromUrl(request.getURI().getPath());
         Optional<RegistrationStatus> status = chargePointHelperService.getRegistrationStatus(chargeBoxId);
 
-        // Allow connections, if station is in db (registration_status field from db does not matter)
         boolean allowConnection = status.isPresent();
 
-        // https://github.com/steve-community/steve/issues/1020
         if (!allowConnection) {
             log.error("ChargeBoxId '{}' is not recognized.", chargeBoxId);
             response.setStatusCode(HttpStatus.NOT_FOUND);
@@ -84,16 +54,12 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
 
         attributes.put(AbstractWebSocketEndpoint.CHARGEBOX_ID_KEY, chargeBoxId);
 
-        // -------------------------------------------------------------------------
-        // 2. Route according to the selected protocol
-        // -------------------------------------------------------------------------
-
         List<String> requestedProtocols = new WebSocketHttpHeaders(request.getHeaders()).getSecWebSocketProtocol();
 
+        // Use a default OCPP version if none is specified
         if (CollectionUtils.isEmpty(requestedProtocols)) {
-            log.error("No protocol (OCPP version) is specified.");
-            response.setStatusCode(HttpStatus.BAD_REQUEST);
-            return false;
+            log.warn("No protocol (OCPP version) is specified. Using default version: {}", DEFAULT_OCPP_VERSION);
+            requestedProtocols = List.of(DEFAULT_OCPP_VERSION);
         }
 
         AbstractWebSocketEndpoint endpoint = selectEndpoint(requestedProtocols);
@@ -108,16 +74,10 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
         return delegate.doHandshake(request, response, endpoint, attributes);
     }
 
-    private AbstractWebSocketEndpoint selectEndpoint(List<String> requestedProtocols ) {
-        log.debug("Requested protocols: {}", requestedProtocols.toString());
-        for (int i = 0; i < requestedProtocols.size(); i++) {
-            String requestedProtocol = requestedProtocols.get(i);
-            String protocol = requestedProtocol.toLowerCase();
+    private AbstractWebSocketEndpoint selectEndpoint(List<String> requestedProtocols) {
+        for (String requestedProtocol : requestedProtocols) {
             for (AbstractWebSocketEndpoint item : endpoints) {
-                String endpointHandlerVersion = item.getVersion().getValue().toLowerCase();
-                //route minor versions to main ones, eg: ocpp1.6j to ocpp1.6
-                if (protocol.startsWith(endpointHandlerVersion)) {
-                    requestedProtocols.set(i, endpointHandlerVersion);
+                if (item.getVersion().getValue().equals(requestedProtocol)) {
                     return item;
                 }
             }
