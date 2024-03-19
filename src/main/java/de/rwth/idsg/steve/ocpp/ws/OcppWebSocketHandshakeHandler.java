@@ -46,6 +46,8 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
 
         boolean allowConnection = status.isPresent();
 
+        log.error("test-test-test");
+
         if (!allowConnection) {
             log.error("ChargeBoxId '{}' is not recognized.", chargeBoxId);
             response.setStatusCode(HttpStatus.NOT_FOUND);
