@@ -187,7 +187,9 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
 
     @Override
     public void insertMeterValues(String chargeBoxIdentity, List<MeterValue> list, int transactionId) {
+        System.out.println("--------------------- insertion meter value started!");
         if (CollectionUtils.isEmpty(list)) {
+            System.err.println("--------------------- insertion meter value: MeterValue List is empty!");
             return;
         }
 
