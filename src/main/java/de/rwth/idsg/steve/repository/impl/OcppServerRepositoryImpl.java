@@ -429,6 +429,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
     }
 
     private void batchInsertMeterValues(DSLContext ctx, List<MeterValue> list, int connectorPk, Integer transactionId) {
+        System.out.println("inform started: connectorPk: " + connectorPk + " , transactionId: " + transactionId);
         List<ConnectorMeterValueRecord> batch =
                 list.stream()
                     .flatMap(t -> t.getSampledValue()
@@ -464,11 +465,22 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
                 .method("POST", body)
                 .addHeader("Content-Type", "application/json")
                 .build();
+        
         try {
             Response response = client.newCall(request).execute();
+            System.out.println("inform request sent: connectorPk: " + connectorPk + " , transactionId: " + transactionId + " , informURL: " + informURL);
+            System.out.println("inform response received: body: " + response.body().string());
+            
+            if (response != null && response.body() != null) {
+                response.body().close();
+            }
         } catch (IOException e) {
+            System.err.println("inform request has an exception!!! connectorPk: " + connectorPk + " , transactionId: " + transactionId);
             e.printStackTrace();
+        } finally {
+            System.out.println("inform request finished: connectorPk: " + connectorPk + " , transactionId: " + transactionId);
         }
+        
     }
 
     private void tryInsertingFailed(UpdateTransactionParams p, Exception e) {
