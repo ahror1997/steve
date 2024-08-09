@@ -467,7 +467,7 @@ public class OcppServerRepositoryImpl implements OcppServerRepository {
         try {
             Response response = client.newCall(request).execute();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            e.printStackTrace();
         }
     }
 
