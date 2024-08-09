@@ -84,28 +84,8 @@ public class OcppWebSocketHandshakeHandler implements HandshakeHandler {
 
         attributes.put(AbstractWebSocketEndpoint.CHARGEBOX_ID_KEY, chargeBoxId);
 
-        // -------------------------------------------------------------------------
-        // 2. Route according to the selected protocol
-        // -------------------------------------------------------------------------
-
-        List<String> requestedProtocols = new WebSocketHttpHeaders(request.getHeaders()).getSecWebSocketProtocol();
-
-        if (CollectionUtils.isEmpty(requestedProtocols)) {
-            log.error("No protocol (OCPP version) is specified.");
-            response.setStatusCode(HttpStatus.BAD_REQUEST);
-            return false;
-        }
-
-        AbstractWebSocketEndpoint endpoint = selectEndpoint(requestedProtocols);
-
-        if (endpoint == null) {
-            log.error("None of the requested protocols '{}' is supported", requestedProtocols);
-            response.setStatusCode(HttpStatus.NOT_FOUND);
-            return false;
-        }
-
-        log.debug("ChargeBoxId '{}' will be using {}", chargeBoxId, endpoint.getClass().getSimpleName());
-        return delegate.doHandshake(request, response, endpoint, attributes);
+        log.debug("ChargeBoxId '{}'", chargeBoxId);
+        return true;
     }
 
     private AbstractWebSocketEndpoint selectEndpoint(List<String> requestedProtocols ) {
